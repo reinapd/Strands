@@ -9,6 +9,8 @@ import static org.junit.Assert.*;
 
 public class DefaultEventManagerTest
 {
+    public static final String SOME_KEY = "some.key";
+    public static final String ANOTHER_KEY = "another.key";
     private EventManager eventManager = new DefaultEventManager();
 
     @Test
@@ -21,7 +23,7 @@ public class DefaultEventManagerTest
     public void testRegisterListenerAndPublishEvent()
     {
         EventListenerMock eventListenerMock = new EventListenerMock(new Class[]{SimpleEvent.class});
-        eventManager.registerListener("some.key", eventListenerMock);
+        eventManager.registerListener(SOME_KEY, eventListenerMock);
         eventManager.publishEvent(new SimpleEvent(this));
         assertTrue(eventListenerMock.isCalled());
     }
@@ -30,7 +32,7 @@ public class DefaultEventManagerTest
     public void testListenerWithoutMatchingEventClass()
     {
         EventListenerMock eventListenerMock = new EventListenerMock(new Class[]{SubEvent.class});
-        eventManager.registerListener("some.key", eventListenerMock);
+        eventManager.registerListener(SOME_KEY, eventListenerMock);
         eventManager.publishEvent(new SimpleEvent(this));
         assertFalse(eventListenerMock.isCalled());
     }
@@ -41,15 +43,28 @@ public class DefaultEventManagerTest
         EventListenerMock eventListenerMock = new EventListenerMock(new Class[]{SimpleEvent.class});
         EventListenerMock eventListenerMock2 = new EventListenerMock(new Class[]{SimpleEvent.class});
 
-        eventManager.registerListener("some.key", eventListenerMock);
-        eventManager.registerListener("another.key", eventListenerMock2);
-        eventManager.unregisterListener("some.key");
+        eventManager.registerListener(SOME_KEY, eventListenerMock);
+        eventManager.registerListener(ANOTHER_KEY, eventListenerMock2);
+        eventManager.unregisterListener(SOME_KEY);
 
         eventManager.publishEvent(new SimpleEvent(this));
         assertFalse(eventListenerMock.isCalled());
         assertTrue(eventListenerMock2.isCalled());
     }
 
+    @Test
+    public void testWhenSubEventThatOnlySubEventListenerIsCalled()
+    {
+        EventListenerMock eventListenerMock = new EventListenerMock(new Class[]{SimpleEvent.class});
+        EventListenerMock subEventListenerMock  = new EventListenerMock(new Class[]{SubEvent.class});
+
+        eventManager.registerListener(SOME_KEY, eventListenerMock);
+        eventManager.registerListener(ANOTHER_KEY, subEventListenerMock );
+
+        eventManager.publishEvent(new SubEvent(this));
+        assertFalse(eventListenerMock.isCalled());
+        assertTrue(subEventListenerMock .isCalled());
+    }
 
     /**
      * Check that registering and unregistering listeners behaves properly.
@@ -59,11 +74,11 @@ public class DefaultEventManagerTest
     {
         DefaultEventManager dem = (DefaultEventManager)eventManager;
         assertEquals(0, dem.getListeners().size());
-        eventManager.registerListener("some.key", new EventListenerMock(new Class[]{SimpleEvent.class}));
+        eventManager.registerListener(SOME_KEY, new EventListenerMock(new Class[]{SimpleEvent.class}));
         assertEquals(1, dem.getListeners().size());
         eventManager.unregisterListener("this.key.is.not.registered");
         assertEquals(1, dem.getListeners().size());
-        eventManager.unregisterListener("some.key");
+        eventManager.unregisterListener(SOME_KEY);
         assertEquals(0, dem.getListeners().size());
     }
 
@@ -76,8 +91,8 @@ public class DefaultEventManagerTest
         EventListenerMock eventListenerMock = new EventListenerMock(new Class[]{SimpleEvent.class});
         EventListenerMock eventListenerMock2 = new EventListenerMock(new Class[]{SimpleEvent.class});
 
-        eventManager.registerListener("some.key", eventListenerMock);
-        eventManager.registerListener("some.key", eventListenerMock2);
+        eventManager.registerListener(SOME_KEY, eventListenerMock);
+        eventManager.registerListener(SOME_KEY, eventListenerMock2);
 
         eventManager.publishEvent(new SimpleEvent(this));
 
@@ -87,7 +102,7 @@ public class DefaultEventManagerTest
         eventListenerMock.resetCalled();
         eventListenerMock2.resetCalled();
 
-        eventManager.unregisterListener("some.key");
+        eventManager.unregisterListener(SOME_KEY);
         eventManager.publishEvent(new SimpleEvent(this));
 
         assertFalse(eventListenerMock2.isCalled());
@@ -97,16 +112,9 @@ public class DefaultEventManagerTest
     /**
      * Attempting to register a null with a valid key should result in an illegal argument exception
      */
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void testAddValidKeyWithNullListener()
     {
-        try
-        {
-            eventManager.registerListener("bogus.key", null);
-            fail("Expected IllegalArgumentException");
-        }
-        catch (IllegalArgumentException ex)
-        {
-        }
+        eventManager.registerListener("bogus.key", null);
     }
 }
