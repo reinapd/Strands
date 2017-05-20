@@ -11,7 +11,7 @@ public class DefaultEventManagerTest
 {
     public static final String SOME_KEY = "some.key";
     public static final String ANOTHER_KEY = "another.key";
-    private EventManager eventManager = new DefaultEventManager();
+    private EventManager eventManager = new DefaultEventManager(); //shouldnt this be reseted/new on each test?
 
     @Test
     public void testPublishNullEvent()
@@ -59,11 +59,30 @@ public class DefaultEventManagerTest
         EventListenerMock subEventListenerMock  = new EventListenerMock(new Class[]{SubEvent.class});
 
         eventManager.registerListener(SOME_KEY, eventListenerMock);
-        eventManager.registerListener(ANOTHER_KEY, subEventListenerMock );
+        eventManager.registerListener(ANOTHER_KEY, subEventListenerMock);
 
         eventManager.publishEvent(new SubEvent(this));
         assertFalse(eventListenerMock.isCalled());
         assertTrue(subEventListenerMock .isCalled());
+    }
+
+    @Test
+    public void testWhenListenerHasNoClassesThenItListenToAllEvents()
+    {
+        EventListenerMock eventListenerMock = new EventListenerMock(new Class[]{});
+        EventListenerMock eventListenerMock2  = new EventListenerMock(new Class[]{});
+
+        eventManager.registerListener(SOME_KEY, eventListenerMock);
+        eventManager.registerListener(ANOTHER_KEY, eventListenerMock2);
+
+        eventManager.publishEvent(new SimpleEvent(this));
+        assertTrue(eventListenerMock.isCalled());
+        assertTrue(eventListenerMock2.isCalled());
+        eventListenerMock.resetCalled();
+        eventListenerMock2.resetCalled();
+        eventManager.publishEvent(new SubEvent(this));
+        assertTrue(eventListenerMock.isCalled());
+        assertTrue(eventListenerMock2 .isCalled());
     }
 
     /**
